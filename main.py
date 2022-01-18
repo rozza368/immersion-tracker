@@ -22,11 +22,45 @@ curses.cbreak()
 curses.curs_set(0)
 stdscr.keypad(True)
 
-win_width = stdscr.getmaxyx()[1]
+win_height, win_width = stdscr.getmaxyx()
 
 
 def add_list():
     pass
+
+
+def input_box(text, title="Input"):
+    box_w = win_width // 2
+    box_h = 7
+    x_pos = win_width // 4
+    y_pos = win_height // 4
+
+    box = curses.newwin(box_h, box_w, y_pos, x_pos)
+    box.keypad(True)
+    curses.echo()
+    curses.curs_set(1)
+
+    box.box()
+    box.addstr(0, 2, title)
+
+    box.addstr(2, 3, text)
+    box.addstr(4, 3, " " * (box_w - 6), curses.A_UNDERLINE)
+    box.move(4, 3)
+
+    stdscr.refresh()
+    box.refresh()
+
+    text_entered = box.getstr()
+
+    del box
+    stdscr.touchwin()
+    stdscr.refresh()
+
+    curses.curs_set(0)
+    curses.noecho()
+
+    # input comes in bytes, so decode it
+    return text_entered.decode("utf-8")
 
 
 def select_show():
@@ -38,10 +72,12 @@ def select_show():
 
     stdscr.clear()
     stdscr.addstr(0, 0, "Shows List", curses.A_BOLD)
+    help_text = "navigate: ↑ / ↓        select: ENTER        add new: n        quit: q"
+    stdscr.addstr(win_height - 1, 0, f"{help_text:^{win_width-1}}", curses.A_BOLD)
     while True:
         for show in range(len(shows)):
             # reverse colours of selected line
-            mod = curses.A_REVERSE if show == selected_line else curses.A_NORMAL
+            mod = curses.A_STANDOUT if show == selected_line else curses.A_NORMAL
             stdscr.addstr(show+1, 0, f"  {shows[show]}"+" "*(win_width - 2 - len(shows[show])), mod)
         stdscr.refresh()
 
@@ -54,7 +90,28 @@ def select_show():
         elif ch == "KEY_UP":
             if selected_line > 0:
                 selected_line -= 1
-        elif ch == "\n":
+        elif ch == 'n':
+            new_name = input_box("Enter series name:", "New Series")
+            if new_name and new_name not in watch_data:
+                watch_data[new_name] = {}
+                num_seasons = input_box("Enter the number of seasons:", "Seasons")
+                while not num_seasons.isnumeric():
+                    num_seasons = input_box("Please enter an integer amount of seasons.", "Seasons")
+                num_seasons = int(num_seasons)
+
+                for season in range(1, num_seasons + 1):
+                    watch_data[new_name][str(season)] = {}
+                    num_episodes = input_box(f"Enter the number of episodes in season {season}:", "Episodes")
+                    while not num_episodes.isnumeric():
+                        num_episodes = input_box(f"Please enter an integer number of episodes for season {season}.", "Episodes")
+                    num_episodes = int(num_episodes)
+                    for e in range(1, num_episodes + 1):
+                        watch_data[new_name][str(season)][e] = 0
+
+            # need to reload shows list
+            shows = list(watch_data)
+
+        elif ch == '\n':
             # user selected a show
             show_name = shows[selected_line]
             selected = True
@@ -77,7 +134,7 @@ def episodes_screen(show_name):
         for season in episode_data:
             for episode in episode_data[season]:
                 if ep_index == selected_line:
-                    mod = curses.A_REVERSE
+                    mod = curses.A_STANDOUT
                     selected_season = season
                     selected_episode = episode
                 else:
