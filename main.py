@@ -21,6 +21,8 @@ help_texts = {
     "NEW": "add new: n",
     "QUIT": "quit: q",
     "BACK": "back: q",
+    "DELETE": "delete: d",
+    "RENAME": "rename: r",
     "ADJUST": "adjust: ← / →"
 }
 
@@ -46,7 +48,7 @@ def print_help_bar(win, options):
     win.addstr(win_height - 1, 0, f"{help_text:^{win_width-1}}", curses.A_BOLD)
 
 
-def input_box(text, title="Input"):
+def create_box(text, title):
     box_w = win_width // 2
     box_h = 7
     x_pos = win_width // 4
@@ -54,14 +56,27 @@ def input_box(text, title="Input"):
 
     box = curses.newwin(box_h, box_w, y_pos, x_pos)
     box.keypad(True)
-    curses.echo()
-    curses.curs_set(1)
 
     box.box()
     box.addstr(0, 2, title)
 
     box.addstr(2, 3, text)
-    box.addstr(4, 3, " " * (box_w - 6), curses.A_UNDERLINE)
+
+    return box
+
+
+def delete_box(box):
+    del box
+    stdscr.touchwin()
+    stdscr.refresh()
+
+
+def input_box(text, title="Input"):
+    curses.echo()
+    curses.curs_set(1)
+    box = create_box(text, title)
+
+    box.addstr(4, 3, " " * (box.getmaxyx()[1] - 6), curses.A_UNDERLINE)
     box.move(4, 3)
 
     stdscr.refresh()
@@ -69,15 +84,34 @@ def input_box(text, title="Input"):
 
     text_entered = box.getstr()
 
-    del box
-    stdscr.touchwin()
-    stdscr.refresh()
+    delete_box(box)
 
     curses.curs_set(0)
     curses.noecho()
 
     # input comes in bytes, so decode it
     return text_entered.decode("utf-8")
+
+
+def confirm_box(text):
+    box = create_box(text, "Confirm")
+    choice = False
+    while True:
+        box.addstr(4, 3, "Yes", curses.A_STANDOUT if choice else curses.A_NORMAL)
+        box.addstr(4, 9, "No", curses.A_NORMAL if choice else curses.A_STANDOUT)
+        box.refresh()
+
+        ch = box.getkey()
+        if ch == "KEY_LEFT":
+            choice = True
+        elif ch == "KEY_RIGHT":
+            choice = False
+        elif ch == '\n':
+            break
+    
+    delete_box(box)
+
+    return choice
 
 
 def select_show():
@@ -90,10 +124,9 @@ def select_show():
     stdscr.clear()
     stdscr.addstr(0, 0, "Shows List", curses.A_BOLD)
     help_text = "navigate: ↑ / ↓        select: ENTER        add new: n        quit: q"
-    print_help_bar(stdscr, ("NAVIGATE", "SELECT", "NEW", "QUIT"))
+    print_help_bar(stdscr, ("NAVIGATE", "SELECT", "NEW", "RENAME", "DELETE", "QUIT"))
     while True:
         for show in range(len(shows)):
-            # reverse colours of selected line
             mod = curses.A_STANDOUT if show == selected_line else curses.A_NORMAL
             stdscr.addstr(show+1, 0, f"  {shows[show]}"+" "*(win_width - 2 - len(shows[show])), mod)
         stdscr.refresh()
@@ -107,6 +140,7 @@ def select_show():
         elif ch == "KEY_UP":
             if selected_line > 0:
                 selected_line -= 1
+
         elif ch == 'n':
             new_name = input_box("Enter series name:", "New Series")
             if new_name and new_name not in watch_data:
@@ -128,6 +162,19 @@ def select_show():
             # need to reload shows list
             shows = list(watch_data)
 
+        elif ch == 'd':
+            if confirm_box(f"Permanently delete data for the show \"{shows[selected_line]}\"?"):
+                del watch_data[shows[selected_line]]
+                stdscr.move(len(shows), 0)
+                stdscr.clrtoeol()
+            shows = list(watch_data)
+
+        elif ch == 'r':
+            new_name = input_box(f"Input a new name for {shows[selected_line]}:", "Rename")
+            if new_name:
+                watch_data[new_name] = watch_data.pop(shows[selected_line])
+                shows = list(watch_data)
+
         elif ch == '\n':
             # user selected a show
             show_name = shows[selected_line]
@@ -141,6 +188,7 @@ def select_show():
 def episodes_screen(show_name):
     stdscr.clear()
     stdscr.addstr(0, 0, f"Episode List for {show_name}", curses.A_BOLD)
+    stdscr.addstr(1, 0, "  Episode       Watch Count")
     print_help_bar(stdscr, ("NAVIGATE", "ADJUST", "BACK"))
     episode_data = watch_data[show_name]
 
@@ -160,7 +208,7 @@ def episodes_screen(show_name):
                 # print like S01E01 with the watch count separated by spaces
                 text = f"  S{season:0>2}E{episode:0>2}{' '*8}{episode_data[season][episode]}"
                 # pad to fill whole screen
-                stdscr.addstr(ep_index+1, 0, f"{text:<{win_width}}", mod)
+                stdscr.addstr(ep_index+2, 0, f"{text:<{win_width}}", mod)
                 ep_index += 1
         stdscr.refresh()
 
