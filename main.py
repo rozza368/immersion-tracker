@@ -66,7 +66,7 @@ def select_show():
 
 def episodes_screen(show_name):
     stdscr.clear()
-    stdscr.addstr(0, 0, f"Episode List for {show_name}\n", curses.A_BOLD)
+    stdscr.addstr(0, 0, f"Episode List for {show_name}", curses.A_BOLD)
     episode_data = watch_data[show_name]
 
     episode_count = sum(len(v) for v in episode_data.values())
@@ -76,7 +76,12 @@ def episodes_screen(show_name):
         ep_index = 0
         for season in episode_data:
             for episode in episode_data[season]:
-                mod = curses.A_REVERSE if ep_index == selected_line else curses.A_NORMAL
+                if ep_index == selected_line:
+                    mod = curses.A_REVERSE
+                    selected_season = season
+                    selected_episode = episode
+                else:
+                    mod = curses.A_NORMAL
                 # print like S01E01 with the watch count separated by spaces
                 text = f"  S{season:0>2}E{episode:0>2}{' '*8}{episode_data[season][episode]}"
                 # pad to fill whole screen
@@ -93,8 +98,11 @@ def episodes_screen(show_name):
         elif ch == "KEY_UP":
             if selected_line > 0:
                 selected_line -= 1
-        elif ch == "\n":
-            pass
+        elif ch == "KEY_LEFT":
+            if watch_data[show_name][selected_season][selected_episode] > 0:
+                watch_data[show_name][selected_season][selected_episode] -= 1
+        elif ch == "KEY_RIGHT":
+            watch_data[show_name][selected_season][selected_episode] += 1
 
     select_show()
 
