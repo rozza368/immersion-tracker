@@ -24,11 +24,17 @@ stdscr.keypad(True)
 
 win_width = stdscr.getmaxyx()[1]
 
+
+def add_list():
+    pass
+
+
 def select_show():
     # initial screen
     shows = list(watch_data)
 
-    selected_line = 1
+    selected_line = 0
+    selected = False
 
     stdscr.clear()
     stdscr.addstr(0, 0, "Shows List", curses.A_BOLD)
@@ -50,15 +56,50 @@ def select_show():
                 selected_line -= 1
         elif ch == "\n":
             # user selected a show
-            show_info = watch_data[shows[selected_line]]
-
-            stdscr.clear()
-            stdscr.addstr(str(show_info))
+            show_name = shows[selected_line]
+            selected = True
             break
+
+    if selected:
+        episodes_screen(show_name)
+
+
+def episodes_screen(show_name):
+    stdscr.clear()
+    stdscr.addstr(0, 0, f"Episode List for {show_name}\n", curses.A_BOLD)
+    episode_data = watch_data[show_name]
+
+    episode_count = sum(len(v) for v in episode_data.values())
+
+    selected_line = 0
+    while True:
+        ep_index = 0
+        for season in episode_data:
+            for episode in episode_data[season]:
+                mod = curses.A_REVERSE if ep_index == selected_line else curses.A_NORMAL
+                # print like S01E01 with the watch count separated by spaces
+                text = f"  S{season:0>2}E{episode:0>2}{' '*8}{episode_data[season][episode]}"
+                # pad to fill whole screen
+                stdscr.addstr(ep_index+1, 0, f"{text:<{win_width}}", mod)
+                ep_index += 1
+        stdscr.refresh()
+
+        ch = stdscr.getkey()
+        if ch == 'q':
+            break
+        elif ch == "KEY_DOWN":
+            if selected_line < episode_count - 1:
+                selected_line += 1
+        elif ch == "KEY_UP":
+            if selected_line > 0:
+                selected_line -= 1
+        elif ch == "\n":
+            pass
+
+    select_show()
 
 
 select_show()
-stdscr.getch()
 
 
 # exit program
