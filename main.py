@@ -15,6 +15,15 @@ def write_file():
     with open(save_file, "w") as f:
         json.dump(watch_data, f, indent=2)
 
+help_texts = {
+    "NAVIGATE": "navigate: ↑ / ↓",
+    "SELECT": "select: ENTER",
+    "NEW": "add new: n",
+    "QUIT": "quit: q",
+    "BACK": "back: q",
+    "ADJUST": "adjust: ← / →"
+}
+
 # start curses
 stdscr = curses.initscr()
 curses.noecho()
@@ -27,6 +36,14 @@ win_height, win_width = stdscr.getmaxyx()
 
 def add_list():
     pass
+
+
+def print_help_bar(win, options):
+    help_text = help_texts[options[0]]
+    for o in options[1:]:
+        help_text += " " * 4 + help_texts[o]
+
+    win.addstr(win_height - 1, 0, f"{help_text:^{win_width-1}}", curses.A_BOLD)
 
 
 def input_box(text, title="Input"):
@@ -73,7 +90,7 @@ def select_show():
     stdscr.clear()
     stdscr.addstr(0, 0, "Shows List", curses.A_BOLD)
     help_text = "navigate: ↑ / ↓        select: ENTER        add new: n        quit: q"
-    stdscr.addstr(win_height - 1, 0, f"{help_text:^{win_width-1}}", curses.A_BOLD)
+    print_help_bar(stdscr, ("NAVIGATE", "SELECT", "NEW", "QUIT"))
     while True:
         for show in range(len(shows)):
             # reverse colours of selected line
@@ -124,6 +141,7 @@ def select_show():
 def episodes_screen(show_name):
     stdscr.clear()
     stdscr.addstr(0, 0, f"Episode List for {show_name}", curses.A_BOLD)
+    print_help_bar(stdscr, ("NAVIGATE", "ADJUST", "BACK"))
     episode_data = watch_data[show_name]
 
     episode_count = sum(len(v) for v in episode_data.values())
