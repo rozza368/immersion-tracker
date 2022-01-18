@@ -16,14 +16,25 @@ def write_file():
         json.dump(watch_data, f, indent=2)
 
 help_texts = {
-    "NAVIGATE": "navigate: ↑ / ↓",
+    "NAVIGATE": "navigate: ↑ / ↓ / k / j",
     "SELECT": "select: ENTER",
     "NEW": "add new: n",
     "QUIT": "quit: q",
     "BACK": "back: q",
     "DELETE": "delete: d",
     "RENAME": "rename: r",
-    "ADJUST": "adjust: ← / →"
+    "ADJUST": "adjust: ← / → / h / l"
+}
+
+keybinds = {
+    "KEY_LEFT": "LEFT",
+    "KEY_RIGHT": "RIGHT",
+    "KEY_UP": "UP",
+    "KEY_DOWN": "DOWN",
+    "h": "LEFT",
+    "l": "RIGHT",
+    "j": "DOWN",
+    "k": "UP"
 }
 
 # start curses
@@ -134,10 +145,10 @@ def select_show():
         ch = stdscr.getkey()
         if ch == 'q':
             break
-        elif ch == "KEY_DOWN":
+        elif keybinds.get(ch) == "DOWN":
             if selected_line < len(shows) - 1:
                 selected_line += 1
-        elif ch == "KEY_UP":
+        elif keybinds.get(ch) == "UP":
             if selected_line > 0:
                 selected_line -= 1
 
@@ -215,16 +226,16 @@ def episodes_screen(show_name):
         ch = stdscr.getkey()
         if ch == 'q':
             break
-        elif ch == "KEY_DOWN":
+        elif keybinds.get(ch) == "DOWN":
             if selected_line < episode_count - 1:
                 selected_line += 1
-        elif ch == "KEY_UP":
+        elif keybinds.get(ch)== "UP":
             if selected_line > 0:
                 selected_line -= 1
-        elif ch == "KEY_LEFT":
+        elif keybinds.get(ch)== "LEFT":
             if watch_data[show_name][selected_season][selected_episode] > 0:
                 watch_data[show_name][selected_season][selected_episode] -= 1
-        elif ch == "KEY_RIGHT":
+        elif keybinds.get(ch)== "RIGHT":
             watch_data[show_name][selected_season][selected_episode] += 1
 
     select_show()
