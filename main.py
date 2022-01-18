@@ -19,43 +19,46 @@ def write_file():
 stdscr = curses.initscr()
 curses.noecho()
 curses.cbreak()
+curses.curs_set(0)
 stdscr.keypad(True)
-
-stdscr.clear()
-
-# initial screen
-shows = list(watch_data)
-
-stdscr.addstr(0, 0, "Shows List", curses.A_BOLD)
 
 win_width = stdscr.getmaxyx()[1]
 
-selected_line = 1
+def select_show():
+    # initial screen
+    shows = list(watch_data)
 
-keys_pressed = []
+    selected_line = 1
 
-while True:
-    for show in range(len(shows)):
-        if show == selected_line:
-            mod = curses.A_REVERSE
-        else:
-            mod = curses.A_NORMAL
-        stdscr.addstr(show+1, 0, f"  {shows[show]}"+" "*(win_width - 2 - len(shows[show])), mod)
-    stdscr.refresh()
+    stdscr.clear()
+    stdscr.addstr(0, 0, "Shows List", curses.A_BOLD)
+    while True:
+        for show in range(len(shows)):
+            # reverse colours of selected line
+            mod = curses.A_REVERSE if show == selected_line else curses.A_NORMAL
+            stdscr.addstr(show+1, 0, f"  {shows[show]}"+" "*(win_width - 2 - len(shows[show])), mod)
+        stdscr.refresh()
 
-    ch = stdscr.getkey()
-    keys_pressed.append(ch)
-    if ch == 'q':
-        break
-    elif ch == "KEY_DOWN":
-        if selected_line < len(shows) - 1:
-            selected_line += 1
-    elif ch == "KEY_UP":
-        if selected_line > 0:
-            selected_line -= 1
-    elif ch == "\n":
-        stdscr.addstr(str(selected_line))
+        ch = stdscr.getkey()
+        if ch == 'q':
+            break
+        elif ch == "KEY_DOWN":
+            if selected_line < len(shows) - 1:
+                selected_line += 1
+        elif ch == "KEY_UP":
+            if selected_line > 0:
+                selected_line -= 1
+        elif ch == "\n":
+            # user selected a show
+            show_info = watch_data[shows[selected_line]]
 
+            stdscr.clear()
+            stdscr.addstr(str(show_info))
+            break
+
+
+select_show()
+stdscr.getch()
 
 
 # exit program
