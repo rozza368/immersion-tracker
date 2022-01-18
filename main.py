@@ -13,7 +13,7 @@ else:
 
 def write_file():
     with open(save_file, "w") as f:
-        json.dump(watch_data, f, indent=2)
+        json.dump(watch_data, f)
 
 help_texts = {
     "NAVIGATE": "navigate: ↑ / ↓ / k / j",
