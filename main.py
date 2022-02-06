@@ -53,10 +53,15 @@ def add_list():
 
 def print_help_bar(win, options):
     help_text = help_texts[options[0]]
+    max_width = win_width-1
     for o in options[1:]:
-        help_text += " " * 4 + help_texts[o]
+        to_add = " " * 4 + help_texts[o]
+        if not len(help_text) + len(to_add) > max_width:
+            help_text += to_add
+        else:
+            break
 
-    win.addstr(win_height - 1, 0, f"{help_text:^{win_width-1}}", curses.A_BOLD)
+    win.addstr(win_height - 1, 0, f"{help_text:^{max_width}}", curses.A_BOLD)
 
 
 def create_box(text, title):
@@ -208,6 +213,7 @@ def episodes_screen(show_name):
     episode_count = sum(len(v) for v in episode_data.values())
 
     episode_pad = curses.newpad(episode_count, win_width)
+    episode_pad.keypad(True)
 
     selected_line = 0
     scroll_amt = 0
