@@ -134,7 +134,6 @@ def select_show():
 
     stdscr.clear()
     stdscr.addstr(0, 0, "Shows List", curses.A_BOLD)
-    help_text = "navigate: ↑ / ↓        select: ENTER        add new: n        quit: q"
     print_help_bar(stdscr, ("NAVIGATE", "SELECT", "NEW", "RENAME", "DELETE", "QUIT"))
     while True:
         for show in range(len(shows)):
@@ -152,6 +151,7 @@ def select_show():
             if selected_line > 0:
                 selected_line -= 1
 
+        ### add new show
         elif ch == 'n':
             new_name = input_box("Enter series name:", "New Series")
             if new_name and new_name not in watch_data:
@@ -173,6 +173,7 @@ def select_show():
             # need to reload shows list
             shows = list(watch_data)
 
+        ### delete a show
         elif ch == 'd':
             if confirm_box(f"Permanently delete data for the show \"{shows[selected_line]}\"?"):
                 del watch_data[shows[selected_line]]
@@ -180,14 +181,15 @@ def select_show():
                 stdscr.clrtoeol()
             shows = list(watch_data)
 
+        ### rename the show
         elif ch == 'r':
             new_name = input_box(f"Input a new name for {shows[selected_line]}:", "Rename")
             if new_name:
                 watch_data[new_name] = watch_data.pop(shows[selected_line])
                 shows = list(watch_data)
 
+        ### select the current show
         elif ch == '\n':
-            # user selected a show
             show_name = shows[selected_line]
             selected = True
             break
@@ -205,7 +207,13 @@ def episodes_screen(show_name):
 
     episode_count = sum(len(v) for v in episode_data.values())
 
+    episode_pad = curses.newpad(episode_count, win_width)
+
     selected_line = 0
+    scroll_amt = 0
+    available_space = win_height - 4
+
+    stdscr.refresh()
     while True:
         ep_index = 0
         for season in episode_data:
@@ -219,23 +227,28 @@ def episodes_screen(show_name):
                 # print like S01E01 with the watch count separated by spaces
                 text = f"  S{season:0>2}E{episode:0>2}{' '*8}{episode_data[season][episode]}"
                 # pad to fill whole screen
-                stdscr.addstr(ep_index+2, 0, f"{text:<{win_width}}", mod)
+                episode_pad.addstr(ep_index, 0, f"{text:<{win_width-1}}", mod)
                 ep_index += 1
-        stdscr.refresh()
 
-        ch = stdscr.getkey()
+        episode_pad.refresh(scroll_amt, 0, 2, 0, win_height-2, win_width-1)
+
+        ch = episode_pad.getkey()
         if ch == 'q':
             break
         elif keybinds.get(ch) == "DOWN":
             if selected_line < episode_count - 1:
                 selected_line += 1
-        elif keybinds.get(ch)== "UP":
+                if selected_line > available_space + scroll_amt:
+                    scroll_amt += 1
+        elif keybinds.get(ch) == "UP":
             if selected_line > 0:
                 selected_line -= 1
-        elif keybinds.get(ch)== "LEFT":
+                if selected_line < scroll_amt:
+                    scroll_amt -= 1
+        elif keybinds.get(ch) == "LEFT":
             if watch_data[show_name][selected_season][selected_episode] > 0:
                 watch_data[show_name][selected_season][selected_episode] -= 1
-        elif keybinds.get(ch)== "RIGHT":
+        elif keybinds.get(ch) == "RIGHT":
             watch_data[show_name][selected_season][selected_episode] += 1
 
     select_show()
