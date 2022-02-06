@@ -241,10 +241,11 @@ def episodes_screen(show_name):
     select_show()
 
 
-select_show()
+try:
+    select_show()
+finally:
+    # exit program
+    curses.endwin()
 
-
-# exit program
-curses.endwin()
 write_file()
 
