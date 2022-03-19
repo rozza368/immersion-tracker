@@ -28,6 +28,7 @@ Vim binds or arrow keys can be used to navigate.
 
 # TODO
 - Add ability to edit season/episode count
+- Display total time watched for each season as well as a grand total
 - Remember currently highlighted selection between sessions
 - Redesign UI for better usability and readability
 
